@@ -1,6 +1,6 @@
-import Home from "../pages/Home/Home";
-import Login from "../pages/auth/LoginPage";
-import Dashboard from "../pages/dashboard/Dashboard";
+import Home from "../Pages/home/Home";
+import Login from "../Pages/auth/LoginPage";
+import Dashboard from "../Pages/dashboard/Dashboard";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AdminLayout from "@/Components/Layout/AdminLayout";
 import Notices from "@/Pages/notices/Notices";
