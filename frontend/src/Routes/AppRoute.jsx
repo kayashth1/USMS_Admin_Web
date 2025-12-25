@@ -2,7 +2,7 @@ import Home from "../Pages/Home/Home";
 import Login from "../Pages/auth/LoginPage";
 import Dashboard from "../Pages/dashboard/Dashboard";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AdminLayout from "@/Components/Layout/AdminLayout";
+import AdminLayout from "@/components/Layout/AdminLayout";
 import Notices from "@/Pages/notices/Notices";
 import Teachers from "@/Pages/teachers/Teachers";
 import Students from "@/Pages/students/Students";

@@ -1,4 +1,4 @@
-import PageTemplate from '@/Components/common/PageTemplate'
+import PageTemplate from '@/components/common/PageTemplate'
 import React from 'react'
 
 const Notices = () => {
