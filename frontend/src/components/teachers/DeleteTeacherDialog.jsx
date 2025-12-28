@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   Dialog,
   DialogContent,
@@ -7,8 +9,33 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-const DeleteTeacherDialog = ({ open, onOpenChange, teacher }) => {
+import { deactivateTeacher } from "@/services/teacher.service";
+
+const DeleteTeacherDialog = ({
+  open,
+  onOpenChange,
+  teacher,
+  onDeleted,
+}) => {
+  const [loading, setLoading] = useState(false);
+
   if (!teacher) return null;
+
+  const handleDelete = async () => {
+    try {
+      setLoading(true);
+
+      await deactivateTeacher(teacher.id);
+
+      onDeleted();              // refresh list/profile
+      onOpenChange(false);      // close dialog
+    } catch (error) {
+      console.error("Delete teacher error:", error);
+      alert("Failed to delete teacher");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -21,7 +48,7 @@ const DeleteTeacherDialog = ({ open, onOpenChange, teacher }) => {
 
         <div className="text-sm text-gray-600 space-y-2">
           <p>
-            Are you sure you want to delete the following teacher?
+            Are you sure you want to deactivate the following teacher?
           </p>
 
           <div className="bg-gray-50 border rounded-md p-3">
@@ -34,8 +61,8 @@ const DeleteTeacherDialog = ({ open, onOpenChange, teacher }) => {
           </div>
 
           <p className="text-xs text-gray-500">
-            This action cannot be undone. All related data
-            (attendance, notices, materials) will be affected.
+            The teacher will no longer be able to access the system.
+            Related data will remain intact.
           </p>
         </div>
 
@@ -43,21 +70,19 @@ const DeleteTeacherDialog = ({ open, onOpenChange, teacher }) => {
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
+            disabled={loading}
           >
             Cancel
           </Button>
 
           <Button
             variant="destructive"
-            disabled
+            onClick={handleDelete}
+            disabled={loading}
           >
-            Delete Teacher
+            {loading ? "Deleting..." : "Delete Teacher"}
           </Button>
         </DialogFooter>
-
-        <p className="text-xs text-gray-500 mt-2">
-          * Delete action will be enabled after Firebase integration.
-        </p>
       </DialogContent>
     </Dialog>
   );

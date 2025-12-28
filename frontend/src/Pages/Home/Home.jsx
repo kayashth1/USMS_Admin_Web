@@ -1,4 +1,9 @@
 import { Link } from "react-router-dom";
+import { auth, db } from "@/config/firebase";
+
+console.log("Firebase Auth:", auth);
+console.log("Firestore:", db);
+
 
 const Home = () => {
   return (

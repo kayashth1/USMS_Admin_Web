@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import {
   Dialog,
   DialogContent,
@@ -9,8 +11,53 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const EditTeacherDialog = ({ open, onOpenChange, teacher }) => {
-  if (!teacher) return null;
+import { updateTeacher } from "@/services/teacher.service";
+
+const EditTeacherDialog = ({ open, onOpenChange, teacher, onUpdated  }) => {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState(null);
+
+  /* ================= INIT FORM ================= */
+  useEffect(() => {
+    if (teacher) {
+      setForm({
+        fullName: teacher.fullName || "",
+        email: teacher.email || "",
+        phone: teacher.phone || "",
+        subject: teacher.subject || "",
+        joiningDate: teacher.joiningDate || "",
+        address: teacher.address || "",
+        schoolName: teacher.schoolName || "",
+      });
+    }
+  }, [teacher]);
+
+  if (!teacher || !form) return null;
+
+  /* ================= HANDLERS ================= */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+
+      await updateTeacher(teacher.id, form);
+
+      onUpdated();           // 🔥 ADD THIS
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Update teacher error:", error);
+      alert("Failed to update teacher");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -19,65 +66,92 @@ const EditTeacherDialog = ({ open, onOpenChange, teacher }) => {
           <DialogTitle>Edit Teacher</DialogTitle>
         </DialogHeader>
 
-        {/* ===== FORM (UI only) ===== */}
+        {/* ===== FORM ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <div className="space-y-1">
             <Label>Full Name</Label>
-            <Input defaultValue={teacher.fullName} />
+            <Input
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1">
             <Label>Employee ID</Label>
-            <Input defaultValue={teacher.employeeId} disabled />
+            <Input value={teacher.employeeId} disabled />
           </div>
 
           <div className="space-y-1">
             <Label>Email</Label>
-            <Input defaultValue={teacher.email} />
+            <Input
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1">
             <Label>Phone</Label>
-            <Input defaultValue={teacher.phone} />
+            <Input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1">
             <Label>Subject</Label>
-            <Input defaultValue={teacher.subject} />
+            <Input
+              name="subject"
+              value={form.subject}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1">
             <Label>Joining Date</Label>
-            <Input defaultValue={teacher.joiningDate} />
+            <Input
+              name="joiningDate"
+              value={form.joiningDate}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1 md:col-span-2">
             <Label>Address</Label>
-            <Input defaultValue={teacher.address} />
+            <Input
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-1 md:col-span-2">
             <Label>School Name</Label>
-            <Input defaultValue={teacher.schoolName} />
+            <Input
+              name="schoolName"
+              value={form.schoolName}
+              onChange={handleChange}
+            />
           </div>
 
         </div>
 
         {/* ===== FOOTER ===== */}
         <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button disabled>
-            Save Changes
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
-
-        {/* NOTE */}
-        <p className="text-xs text-gray-500 mt-2">
-          * This is UI only. Changes will be connected to Firebase later.
-        </p>
       </DialogContent>
     </Dialog>
   );

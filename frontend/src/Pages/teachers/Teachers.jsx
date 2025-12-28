@@ -1,10 +1,11 @@
-import { teachers } from "@/data/teachers";
-import { teacherClassAssignments } from "@/data/teacherClassAssignments";
+import { getTeachers } from "@/services/teacher.service";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import EditTeacherDialog from "@/components/teachers/EditTeacherDialog";
 import AddTeacherDialog from "@/components/teachers/AddTeacherDialog";
 import DeleteTeacherDialog from "@/components/teachers/DeleteTeacherDialog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,27 +22,73 @@ import {
 import { Plus, Mail, Phone, Pencil, Trash2 } from "lucide-react";
 
 const Teachers = () => {
-  // UI-derived values (NOT stored in data)
-  const activeTeachers = teachers;
-  const onLeaveTeachers = []; // future: leave collection
   const navigate = useNavigate();
+
+  /* ================= STATE ================= */
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [tab, setTab] = useState("all");
+
   const [editOpen, setEditOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+
   const [addOpen, setAddOpen] = useState(false);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
 
-  // Assigned Class Login..
-const assignedClasses = teacherClassAssignments.filter(
-  (a) => a.teacherId === teachers.id
-);
+  /* ================= DERIVED DATA ================= */
+  const activeTeachers = teachers.filter(
+    (t) => t.isActive !== false
+  );
+
+  const onLeaveTeachers = []; // future feature
+
+  const visibleTeachers = (() => {
+    if (tab === "active") return activeTeachers;
+    if (tab === "leave") return onLeaveTeachers;
+    return teachers;
+  })();
+
+  /* ================= FETCH ================= */
+  const reloadTeachers = async () => {
+    try {
+      setLoading(true);
+      const data = await getTeachers();
+      setTeachers(data);
+    } catch (error) {
+      console.error("Error fetching teachers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadTeachers();
+  }, []);
+
+  /* ================= LOADING ================= */
+  if (loading) {
+    return (
+      <div className="p-6 text-gray-500">
+        Loading teachers...
+      </div>
+    );
+  }
+
+  /* ================= UI ================= */
   return (
     <div className="space-y-6">
       {/* ================= HEADER ================= */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Teacher Management</h1>
-          <p className="text-gray-500">Manage teachers and their assignments</p>
+          <h1 className="text-2xl font-semibold">
+            Teacher Management
+          </h1>
+          <p className="text-gray-500">
+            Manage teachers and their assignments
+          </p>
         </div>
 
         <Button className="gap-2" onClick={() => setAddOpen(true)}>
@@ -50,7 +97,7 @@ const assignedClasses = teacherClassAssignments.filter(
         </Button>
       </div>
 
-      {/* ================= SEARCH & FILTER ================= */}
+      {/* ================= SEARCH & FILTER (UI ONLY) ================= */}
       <Card>
         <CardContent className="p-4 flex flex-col md:flex-row gap-4">
           <Input
@@ -64,7 +111,9 @@ const assignedClasses = teacherClassAssignments.filter(
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Subjects</SelectItem>
-              <SelectItem value="mathematics">Mathematics</SelectItem>
+              <SelectItem value="mathematics">
+                Mathematics
+              </SelectItem>
               <SelectItem value="science">Science</SelectItem>
               <SelectItem value="english">English</SelectItem>
             </SelectContent>
@@ -75,7 +124,7 @@ const assignedClasses = teacherClassAssignments.filter(
       </Card>
 
       {/* ================= TABS ================= */}
-      <Tabs defaultValue="all">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="all">
             All Teachers ({teachers.length})
@@ -91,10 +140,10 @@ const assignedClasses = teacherClassAssignments.filter(
 
       {/* ================= TEACHER CARDS ================= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {teachers.map((teacher) => (
+        {visibleTeachers.map((teacher) => (
           <Card key={teacher.id}>
             <CardContent className="p-6 space-y-4">
-              {/* Top Section */}
+              {/* Top */}
               <div className="flex items-start justify-between">
                 <div className="flex gap-3">
                   <div className="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center">
@@ -102,29 +151,42 @@ const assignedClasses = teacherClassAssignments.filter(
                   </div>
 
                   <div>
-                    <h3 className="font-semibold">{teacher.fullName}</h3>
-                    <p className="text-sm text-gray-500">{teacher.subject}</p>
+                    <h3 className="font-semibold">
+                      {teacher.fullName ?? "Unnamed Teacher"}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {teacher.subject ?? "-"}
+                    </p>
                   </div>
                 </div>
 
-                {/* UI-derived status */}
-                <Badge className="bg-green-100 text-green-700">Active</Badge>
+                <Badge
+                  className={
+                    teacher.isActive === false
+                      ? "bg-red-100 text-red-700"
+                      : "bg-green-100 text-green-700"
+                  }
+                >
+                  {teacher.isActive === false
+                    ? "Inactive"
+                    : "Active"}
+                </Badge>
               </div>
 
-              {/* Contact Info */}
+              {/* Contact */}
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <Mail size={14} />
-                  {teacher.email}
+                  {teacher.email ?? "-"}
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone size={14} />
-                  {teacher.phone}
+                  {teacher.phone ?? "-"}
                 </div>
               </div>
 
-              {/* Assigned Classes (UI placeholder) */}
-                        <div>
+              {/* Placeholder */}
+              <div>
                 <p className="text-sm text-gray-500">
                   Assigned Classes
                 </p>
@@ -137,13 +199,14 @@ const assignedClasses = teacherClassAssignments.filter(
               <div className="flex items-center justify-between pt-2">
                 <Button
                   variant="secondary"
-                  className=""
-                  onClick={() => navigate(`/teachers/${teacher.id}`)}
+                  onClick={() =>
+                    navigate(`/teachers/${teacher.id}`)
+                  }
                 >
                   View Profile
                 </Button>
 
-                <div className="flex gap-2 ml-2">
+                <div className="flex gap-2">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -154,6 +217,7 @@ const assignedClasses = teacherClassAssignments.filter(
                   >
                     <Pencil size={16} />
                   </Button>
+
                   <Button
                     size="icon"
                     variant="ghost"
@@ -171,16 +235,26 @@ const assignedClasses = teacherClassAssignments.filter(
           </Card>
         ))}
       </div>
+
+      {/* ================= DIALOGS ================= */}
       <EditTeacherDialog
         open={editOpen}
         onOpenChange={setEditOpen}
         teacher={selectedTeacher}
+        onUpdated={reloadTeachers}
       />
-      <AddTeacherDialog open={addOpen} onOpenChange={setAddOpen} />
+
+      <AddTeacherDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSuccess={reloadTeachers}
+      />
+
       <DeleteTeacherDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         teacher={teacherToDelete}
+         onDeleted={reloadTeachers} 
       />
     </div>
   );

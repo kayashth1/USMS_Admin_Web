@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { teachers } from "@/data/teachers";
-import { teacherClassAssignments } from "@/data/teacherClassAssignments";
+
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,14 +18,55 @@ const TeacherProfile = () => {
   const { teacherId } = useParams();
   const navigate = useNavigate();
 
-  const teacher = teachers.find(t => t.id === teacherId);
-const assignedClasses = teacherClassAssignments.filter(
-  (a) => a.teacherId === teacher.id
-);
+  const [teacher, setTeacher] = useState(null);
+  const [assignedClasses, setAssignedClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!teacher) {
-    return <p>Teacher not found</p>;
+  /* ================= FETCH TEACHER ================= */
+const fetchTeacher = async () => {
+  try {
+    const ref = doc(db, "teachers", teacherId);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      setTeacher({ id: snap.id, ...snap.data() });
+    }
+  } catch (err) {
+    console.error("Failed to fetch teacher:", err);
   }
+};
+
+useEffect(() => {
+  fetchTeacher();
+}, [teacherId]);
+
+
+  /* ========== FETCH ASSIGNED CLASSES (OPTIONAL) ========== */
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const q = query(
+          collection(db, "teacherClassAssignments"),
+          where("teacherId", "==", teacherId)
+        );
+        const snap = await getDocs(q);
+
+        const list = snap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }));
+
+        setAssignedClasses(list);
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
+      }
+    };
+
+    fetchClasses();
+  }, [teacherId]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!teacher) return <p>Teacher not found</p>;
 
   return (
     <div className="space-y-6">
@@ -48,7 +91,7 @@ const assignedClasses = teacherClassAssignments.filter(
         </div>
 
         <Badge className="bg-green-100 text-green-700">
-          Active
+          {teacher.isActive ? "Active" : "Inactive"}
         </Badge>
       </div>
 
@@ -63,7 +106,7 @@ const assignedClasses = teacherClassAssignments.filter(
 
           <div>
             <p className="text-sm text-gray-500">Joining Date</p>
-            <p className="font-medium">{teacher.joiningDate}</p>
+            <p className="font-medium">{teacher.joiningDate || "-"}</p>
           </div>
 
           <div>
@@ -101,46 +144,42 @@ const assignedClasses = teacherClassAssignments.filter(
         <TabsContent value="overview">
           <Card>
             <CardContent className="p-6 text-gray-600">
-              This section will show performance, attendance summary,
-              and teaching analytics in future.
+              Performance, attendance summary, and analytics will appear here.
             </CardContent>
           </Card>
         </TabsContent>
 
-<TabsContent value="classes">
-  <Card>
-    <CardContent className="p-6 space-y-3">
+        <TabsContent value="classes">
+          <Card>
+            <CardContent className="p-6 space-y-3">
+              {assignedClasses.length === 0 ? (
+                <p className="text-gray-500">
+                  No classes assigned yet.
+                </p>
+              ) : (
+                assignedClasses.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between border rounded-md p-3"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        Class {item.class}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Subject: {item.subject}
+                      </p>
+                    </div>
 
-      {assignedClasses.length === 0 ? (
-        <p className="text-gray-500">
-          No classes assigned yet.
-        </p>
-      ) : (
-        assignedClasses.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between border rounded-md p-3"
-          >
-            <div>
-              <p className="font-medium">
-                Class {item.class}
-              </p>
-              <p className="text-sm text-gray-500">
-                Subject: {item.subject}
-              </p>
-            </div>
-
-            <Badge variant="secondary">
-              Active
-            </Badge>
-          </div>
-        ))
-      )}
-
-    </CardContent>
-  </Card>
-</TabsContent>
-
+                    <Badge variant="secondary">
+                      Active
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="notices">
           <Card>
