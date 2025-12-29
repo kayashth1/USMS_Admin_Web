@@ -8,6 +8,8 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
 
 import {
@@ -16,6 +18,23 @@ import {
 } from "firebase/auth";
 
 import { auth, db } from "@/config/firebase";
+
+export const getTeachersBySchool = async (schoolId) => {
+  if (!schoolId) return [];
+
+  const q = query(
+    collection(db, "teachers"),
+    where("schoolId", "==", schoolId)
+  );
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
 
 /* =====================================================
    CREATE TEACHER (DEMO ONLY – FRONTEND)
@@ -44,7 +63,7 @@ export const createTeacher = async (teacherData) => {
    GET ALL TEACHERS
 ===================================================== */
 export const getTeachers = async () => {
-  const snapshot = await getDocs(collection(db, "teachers"));
+  const snapshot = await getDocs(q);
 
   return snapshot.docs.map((docSnap) => ({
     id: docSnap.id,

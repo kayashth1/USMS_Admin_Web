@@ -16,7 +16,10 @@ import { createTeacher } from "@/services/teacher.service";
 const AddTeacherDialog = ({ open, onOpenChange }) => {
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
+  // 🔥 Auto-derived from logged-in principal
+  const schoolId = localStorage.getItem("principalSchoolId");
+
+  const initialForm = {
     fullName: "",
     employeeId: "",
     email: "",
@@ -25,9 +28,11 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
     subject: "",
     joiningDate: "",
     address: "",
-    schoolName: "IIT ISM Dhanbad",
-  });
+  };
 
+  const [form, setForm] = useState(initialForm);
+
+  /* ================= HANDLE CHANGE ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -36,12 +41,34 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
     }));
   };
 
+  /* ================= CREATE TEACHER ================= */
   const handleAddTeacher = async () => {
     try {
+      if (!schoolId) {
+        throw new Error("School context missing. Please login again.");
+      }
+
+      if (!form.fullName || !form.email || !form.password) {
+        throw new Error("Full name, email and password are required.");
+      }
+
       setLoading(true);
 
-      await createTeacher(form);
+      // 🔒 Trim + send only valid data
+      await createTeacher({
+        fullName: form.fullName.trim(),
+        employeeId: form.employeeId.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        phone: form.phone.trim(),
+        subject: form.subject.trim(),
+        joiningDate: form.joiningDate,
+        address: form.address.trim(),
+        schoolId, // 🔥 AUTO-ASSIGNED
+      });
 
+      // ✅ Reset form + close dialog
+      setForm(initialForm);
       onOpenChange(false);
     } catch (error) {
       console.error("Create teacher error:", error);
@@ -60,8 +87,9 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
 
         {/* ===== FORM ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
           <div className="space-y-1">
-            <Label>Full Name</Label>
+            <Label>Full Name *</Label>
             <Input
               name="fullName"
               value={form.fullName}
@@ -79,8 +107,9 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
           </div>
 
           <div className="space-y-1">
-            <Label>Email</Label>
+            <Label>Email *</Label>
             <Input
+              type="email"
               name="email"
               value={form.email}
               onChange={handleChange}
@@ -88,7 +117,7 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
           </div>
 
           <div className="space-y-1">
-            <Label>Password</Label>
+            <Label>Password *</Label>
             <Input
               type="password"
               name="password"
@@ -118,6 +147,7 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
           <div className="space-y-1">
             <Label>Joining Date</Label>
             <Input
+              type="date"
               name="joiningDate"
               value={form.joiningDate}
               onChange={handleChange}
@@ -133,14 +163,6 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
             />
           </div>
 
-          <div className="space-y-1 md:col-span-2">
-            <Label>School Name</Label>
-            <Input
-              name="schoolName"
-              value={form.schoolName}
-              onChange={handleChange}
-            />
-          </div>
         </div>
 
         {/* ===== FOOTER ===== */}
@@ -156,6 +178,10 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
             {loading ? "Adding..." : "Add Teacher"}
           </Button>
         </DialogFooter>
+
+        <p className="text-xs text-gray-500 mt-2">
+          * Teacher will be automatically assigned to your school.
+        </p>
       </DialogContent>
     </Dialog>
   );
