@@ -30,9 +30,14 @@ const fetchTeacher = async () => {
 
     if (snap.exists()) {
       setTeacher({ id: snap.id, ...snap.data() });
+    } else {
+      setTeacher(null);
     }
   } catch (err) {
     console.error("Failed to fetch teacher:", err);
+    setTeacher(null);
+  } finally {
+    setLoading(false);   
   }
 };
 
