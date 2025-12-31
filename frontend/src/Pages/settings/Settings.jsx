@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/firebase";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 
 import {
   Tabs,
@@ -20,363 +23,173 @@ import {
 } from "@/components/ui/select";
 
 import { School } from "lucide-react";
+import SubjectManagement from "@/components/settings/SubjectManagement";
+import ClassManagement from "@/components/settings/ClassManagement";
+import ClassSubjectManagement from "@/components/settings/ClassSubjectManagement";
+import TeacherAssignment from "@/components/settings/TeacherAssignment";
 
 const Settings = () => {
+  const schoolId = localStorage.getItem("principalSchoolId");
+
+  const [school, setSchool] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  /* ================= FETCH SCHOOL ================= */
+  useEffect(() => {
+    const fetchSchool = async () => {
+      if (!schoolId) return;
+
+      try {
+        const ref = doc(db, "schools", schoolId);
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          setSchool(snap.data());
+        }
+      } catch (err) {
+        console.error("Failed to fetch school:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchool();
+  }, [schoolId]);
+
+  /* ================= SAVE ================= */
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await updateDoc(doc(db, "schools", schoolId), school);
+      alert("School profile updated successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p className="p-6 text-gray-500">Loading settings...</p>;
+  if (!school) return <p className="p-6 text-red-500">School not found</p>;
+
   return (
     <div className="space-y-6">
-
-      {/* ===== Page Header ===== */}
       <div>
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="text-gray-500">
-          Manage school settings and configurations
+          Manage school configuration
         </p>
       </div>
 
-      {/* ===== Tabs ===== */}
       <Tabs defaultValue="school">
         <TabsList>
           <TabsTrigger value="school">School Profile</TabsTrigger>
           <TabsTrigger value="academic">Academic Year</TabsTrigger>
-          <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
-          <TabsTrigger value="backup">Backup & Export</TabsTrigger>
+          <TabsTrigger value="subjects_classes">Subject & Classes</TabsTrigger>
+          <TabsTrigger value="Teacher_Assignment">Teacher Assignment</TabsTrigger>
         </TabsList>
 
-        {/* ================= SCHOOL PROFILE TAB ================= */}
+        {/* ================= SCHOOL PROFILE ================= */}
         <TabsContent value="school">
           <Card>
             <CardContent className="p-6 space-y-6">
-
-              {/* Section Header */}
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
                   <School size={20} />
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    School Information
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Update your school's basic information
-                  </p>
-                </div>
+                <h2 className="text-lg font-semibold">
+                  School Information
+                </h2>
               </div>
 
-              {/* Form */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField label="School Name" value={school.name}
+                  onChange={(v) => setSchool({ ...school, name: v })} />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    School Name
-                  </label>
-                  <Input defaultValue="Universal School Management System" />
-                </div>
+                <InputField label="School Code" value={school.code}
+                  onChange={(v) => setSchool({ ...school, code: v })} />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    School Code
-                  </label>
-                  <Input defaultValue="USMS001" />
-                </div>
+                <InputField label="Email" value={school.email}
+                  onChange={(v) => setSchool({ ...school, email: v })} />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Email
-                  </label>
-                  <Input defaultValue="admin@usms.edu" />
-                </div>
+                <InputField label="Phone" value={school.phone}
+                  onChange={(v) => setSchool({ ...school, phone: v })} />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Phone Number
-                  </label>
-                  <Input defaultValue="+1 234-567-8900" />
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-sm font-medium">
-                    Address
-                  </label>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium">Address</label>
                   <Textarea
-                    rows={3}
-                    defaultValue="123 Education Lane, Springfield, IL 62701"
+                    value={school.address}
+                    onChange={(e) =>
+                      setSchool({ ...school, address: e.target.value })
+                    }
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Principal Name
-                  </label>
-                  <Input defaultValue="Dr. Robert Anderson" />
-                </div>
+                <InputField label="Principal Name" value={school.principalName}
+                  onChange={(v) => setSchool({ ...school, principalName: v })} />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Established Year
-                  </label>
-                  <Input defaultValue="1985" />
-                </div>
-
+                <InputField label="Established Year" value={school.establishedYear}
+                  onChange={(v) => setSchool({ ...school, establishedYear: v })} />
               </div>
 
-              {/* Save Button */}
               <div className="flex justify-end">
-                <Button className="gap-2">
-                  💾 Save Changes
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
-
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ================= PLACEHOLDER TABS ================= */}
-<TabsContent value="academic">
-  <Card>
-    <CardContent className="p-6 space-y-6">
-
-      {/* Section Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
-          📅
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">
-            Academic Year Configuration
-          </h2>
-          <p className="text-sm text-gray-500">
-            Set up academic year and term dates
-          </p>
-        </div>
-      </div>
-
-      {/* Academic Year & Terms */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Current Academic Year
-          </label>
-          <Select defaultValue="2024-2025">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2023-2024">2023–2024</SelectItem>
-              <SelectItem value="2024-2025">2024–2025</SelectItem>
-              <SelectItem value="2025-2026">2025–2026</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Number of Terms
-          </label>
-          <Select defaultValue="2">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 Term</SelectItem>
-              <SelectItem value="2">2 Terms</SelectItem>
-              <SelectItem value="3">3 Terms</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-      </div>
-
-      {/* Term Dates */}
-      <div className="space-y-4">
-
-        {/* Term 1 */}
-        <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
-          <h3 className="font-medium">Term 1</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Start Date</label>
-              <Input defaultValue="01-04-2024" />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Start Date</label>
-              <Input defaultValue="01-04-2024" />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">End Date</label>
-              <Input defaultValue="30-09-2024" />
-            </div>
-          </div>
-        </div>
-
-        {/* Term 2 */}
-        <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
-          <h3 className="font-medium">Term 2</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Start Date</label>
-              <Input defaultValue="01-10-2024" />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Start Date</label>
-              <Input defaultValue="01-10-2024" />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">End Date</label>
-              <Input defaultValue="31-03-2025" />
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button className="gap-2">
-          💾 Save Configuration
-        </Button>
-      </div>
-
-    </CardContent>
-  </Card>
-</TabsContent>
-
-
-        <TabsContent value="roles">
+        {/* ================= ACADEMIC YEAR ================= */}
+        <TabsContent value="academic">
           <Card>
-            <CardContent className="p-6 text-gray-500">
-              Roles & Permissions management will be implemented later.
+            <CardContent className="p-6 space-y-4">
+              <label className="text-sm font-medium">
+                Current Academic Year
+              </label>
+
+              <Select
+                value={school.currentSession}
+                onValueChange={(val) =>
+                  setSchool({ ...school, currentSession: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2023-2024">2023–2024</SelectItem>
+                  <SelectItem value="2024-2025">2024–2025</SelectItem>
+                  <SelectItem value="2025-2026">2025–2026</SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
         </TabsContent>
 
-<TabsContent value="backup">
-  <Card>
-    <CardContent className="p-6 space-y-8">
-
-      {/* ===== Header ===== */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
-          🗄️
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">
-            Data Backup & Export
-          </h2>
-          <p className="text-sm text-gray-500">
-            Manage data backups and exports
-          </p>
-        </div>
-      </div>
-
-      {/* ===== Automated Backups ===== */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Automated Backups</h3>
-
-        <div className="bg-gray-50 border rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <p className="font-medium">Enable Daily Backups</p>
-            <p className="text-sm text-gray-500">
-              Automatic backup at 2:00 AM daily
-            </p>
-          </div>
-          <Switch defaultChecked />
-        </div>
-
-        <div className="bg-gray-50 border rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <p className="font-medium">Enable Weekly Backups</p>
-            <p className="text-sm text-gray-500">
-              Full backup every Sunday
-            </p>
-          </div>
-          <Switch />
-        </div>
-      </div>
-
-      {/* ===== Export Data ===== */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Export Data</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          <Card className="bg-gray-50">
-            <CardContent className="p-4 space-y-1">
-              <p className="font-medium">Export Student Data</p>
-              <p className="text-sm text-gray-500">
-                Download all student records as CSV
-              </p>
-              <Button variant="outline" disabled className="mt-2">
-                Export CSV
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-50">
-            <CardContent className="p-4 space-y-1">
-              <p className="font-medium">Export Teacher Data</p>
-              <p className="text-sm text-gray-500">
-                Download all teacher records as CSV
-              </p>
-              <Button variant="outline" disabled className="mt-2">
-                Export CSV
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-50">
-            <CardContent className="p-4 space-y-1">
-              <p className="font-medium">Export Attendance</p>
-              <p className="text-sm text-gray-500">
-                Download attendance reports as Excel
-              </p>
-              <Button variant="outline" disabled className="mt-2">
-                Export Excel
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-50">
-            <CardContent className="p-4 space-y-1">
-              <p className="font-medium">Export Results</p>
-              <p className="text-sm text-gray-500">
-                Download academic results as PDF
-              </p>
-              <Button variant="outline" disabled className="mt-2">
-                Export PDF
-              </Button>
-            </CardContent>
-          </Card>
-
-        </div>
-      </div>
-
-      {/* ===== Manual Backup ===== */}
-      <div className="flex justify-start pt-4">
-        <Button className="gap-2">
-          🗃️ Create Manual Backup Now
-        </Button>
-      </div>
-
-      <p className="text-xs text-gray-500">
-        * Backup and export features will be enabled after backend integration.
-      </p>
-
-    </CardContent>
-  </Card>
-</TabsContent>
-
-
+        {/* ================= Subject & Claases  ================= */}
+        <TabsContent value="subjects_classes">
+              <SubjectManagement/>
+              <ClassManagement/>
+              <ClassSubjectManagement/>
+        </TabsContent>
+        {/* ================= Teacher Assignment  ================= */}
+        <TabsContent value="Teacher_Assignment">
+              <TeacherAssignment/>
+        </TabsContent>
       </Tabs>
-
     </div>
   );
 };
+
+const InputField = ({ label, value, onChange }) => (
+  <div className="space-y-1">
+    <label className="text-sm font-medium">{label}</label>
+    <Input value={value || ""} onChange={(e) => onChange(e.target.value)} />
+  </div>
+);
 
 export default Settings;
