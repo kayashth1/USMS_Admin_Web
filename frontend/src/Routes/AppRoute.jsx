@@ -15,6 +15,7 @@ import Attendance from "@/Pages/attendance/Attendance";
 import Academics from "@/Pages/academics/Academics";
 import Books from "@/Pages/books/Books";
 import Settings from "@/Pages/settings/Settings";
+import StudentProfile from "@/Pages/students/StudentProfile";
 
 const AppRoutes = () => {
   return (
@@ -40,6 +41,7 @@ const AppRoutes = () => {
             element={<TeacherProfile />}
           />
           <Route path="/students" element={<Students />} />
+          <Route path="/students/:studentId" element={<StudentProfile/>} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/academics" element={<Academics />} />
           <Route path="/books" element={<Books />} />

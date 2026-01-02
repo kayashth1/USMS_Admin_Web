@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   Dialog,
   DialogContent,
@@ -5,10 +7,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 import {
   Select,
   SelectTrigger,
@@ -17,7 +17,49 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-const AddStudentDialog = ({ open, onOpenChange }) => {
+import { createStudent } from "@/services/student.service";
+
+const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
+  const schoolId = localStorage.getItem("principalSchoolId"); // ✅ ONLY THIS
+
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    roll: "",
+    classLabel: "",
+    parentName: "",
+    contact: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((p) => ({ ...p, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (!schoolId) {
+        throw new Error("School context missing. Please login again.");
+      }
+
+      setLoading(true);
+
+      await createStudent({
+        ...form,
+        schoolId, // 🔥 ONLY FOREIGN KEY
+      });
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -26,76 +68,34 @@ const AddStudentDialog = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          <Input name="fullName" placeholder="Student Name" onChange={handleChange} />
+          <Input name="email" placeholder="Email" onChange={handleChange} />
+          <Input name="password" type="password" placeholder="Password" onChange={handleChange} />
+          <Input name="roll" placeholder="Roll Number" onChange={handleChange} />
 
-          {/* Student Name */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Student Name
-            </label>
-            <Input placeholder="Enter student full name" />
-          </div>
+          <Select onValueChange={(v) =>
+            setForm((p) => ({ ...p, classLabel: v }))
+          }>
+            <SelectTrigger>
+              <SelectValue placeholder="Class & Section" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10-A">10-A</SelectItem>
+              <SelectItem value="10-B">10-B</SelectItem>
+              <SelectItem value="9-A">9-A</SelectItem>
+            </SelectContent>
+          </Select>
 
-          {/* Class */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Class
-            </label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10-A">Class 10-A</SelectItem>
-                <SelectItem value="9-A">Class 9-A</SelectItem>
-                <SelectItem value="9-B">Class 9-B</SelectItem>
-                <SelectItem value="8-C">Class 8-C</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Roll Number */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Roll Number
-            </label>
-            <Input placeholder="Enter roll number" />
-          </div>
-
-          {/* Parent Name */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Parent Name
-            </label>
-            <Input placeholder="Enter parent name" />
-          </div>
-
-          {/* Contact */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Contact Number
-            </label>
-            <Input placeholder="+91 XXXXX XXXXX" />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Student Email
-            </label>
-            <Input placeholder="student@email.com" />
-          </div>
-
+          <Input name="parentName" placeholder="Parent Name" onChange={handleChange} />
+          <Input name="contact" placeholder="Parent Contact" onChange={handleChange} />
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button>
-            Add Student
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? "Adding..." : "Add Student"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -104,3 +104,4 @@ const AddStudentDialog = ({ open, onOpenChange }) => {
 };
 
 export default AddStudentDialog;
+  
