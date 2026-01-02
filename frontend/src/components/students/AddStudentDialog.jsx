@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Dialog,
@@ -18,11 +18,14 @@ import {
 } from "@/components/ui/select";
 
 import { createStudent } from "@/services/student.service";
+import { getClassesBySchool } from "@/services/class.service";
 
 const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
-  const schoolId = localStorage.getItem("principalSchoolId"); // ✅ ONLY THIS
+  const schoolId = localStorage.getItem("principalSchoolId"); // ✅ DO NOT CHANGE
 
   const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState([]);
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -33,22 +36,46 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
     contact: "",
   });
 
+  /* ================= LOAD CLASSES ================= */
+  useEffect(() => {
+    if (!schoolId) return;
+
+    const loadClasses = async () => {
+      const data = await getClassesBySchool(schoolId);
+      setClasses(data.filter((c) => c.isActive));
+    };
+
+    loadClasses();
+  }, [schoolId]);
+
+  /* ================= CHANGE ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
   };
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async () => {
     try {
       if (!schoolId) {
         throw new Error("School context missing. Please login again.");
       }
 
+      if (
+        !form.fullName ||
+        !form.email ||
+        !form.password ||
+        !form.roll ||
+        !form.classLabel
+      ) {
+        throw new Error("Please fill all required fields");
+      }
+
       setLoading(true);
 
       await createStudent({
         ...form,
-        schoolId, // 🔥 ONLY FOREIGN KEY
+        schoolId, // ✅ ONLY FOREIGN KEY
       });
 
       onOpenChange(false);
@@ -68,32 +95,82 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input name="fullName" placeholder="Student Name" onChange={handleChange} />
-          <Input name="email" placeholder="Email" onChange={handleChange} />
-          <Input name="password" type="password" placeholder="Password" onChange={handleChange} />
-          <Input name="roll" placeholder="Roll Number" onChange={handleChange} />
+          <Input
+            name="fullName"
+            placeholder="Student Name"
+            value={form.fullName}
+            onChange={handleChange}
+          />
 
-          <Select onValueChange={(v) =>
-            setForm((p) => ({ ...p, classLabel: v }))
-          }>
+          <Input
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+          />
+
+          <Input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+          />
+
+          <Input
+            name="roll"
+            placeholder="Roll Number"
+            value={form.roll}
+            onChange={handleChange}
+          />
+
+          {/* 🔥 DYNAMIC CLASSES */}
+          <Select
+            value={form.classLabel}
+            onValueChange={(v) =>
+              setForm((p) => ({ ...p, classLabel: v }))
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Class & Section" />
             </SelectTrigger>
+
             <SelectContent>
-              <SelectItem value="10-A">10-A</SelectItem>
-              <SelectItem value="10-B">10-B</SelectItem>
-              <SelectItem value="9-A">9-A</SelectItem>
+              {classes.map((c) => (
+                <SelectItem
+                  key={c.docId}
+                  value={`${c.grade}-${c.section}`}
+                >
+                  {c.grade}-{c.section}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
-          <Input name="parentName" placeholder="Parent Name" onChange={handleChange} />
-          <Input name="contact" placeholder="Parent Contact" onChange={handleChange} />
+          <Input
+            name="parentName"
+            placeholder="Parent Name"
+            value={form.parentName}
+            onChange={handleChange}
+          />
+
+          <Input
+            name="contact"
+            placeholder="Parent Contact"
+            value={form.contact}
+            onChange={handleChange}
+          />
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
+
           <Button onClick={handleSubmit} disabled={loading}>
             {loading ? "Adding..." : "Add Student"}
           </Button>
@@ -104,4 +181,3 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
 };
 
 export default AddStudentDialog;
-  

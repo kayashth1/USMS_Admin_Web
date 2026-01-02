@@ -20,10 +20,14 @@ import {
 } from "@/components/ui/select";
 
 import { updateStudent } from "@/services/student.service";
+import { getClassesBySchool } from "@/services/class.service";
 
 const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
+  const schoolId = localStorage.getItem("principalSchoolId");
+
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(null);
+  const [classes, setClasses] = useState([]);
 
   /* ================= INIT FORM ================= */
   useEffect(() => {
@@ -37,6 +41,23 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
       });
     }
   }, [student]);
+
+  /* ================= FETCH CLASSES ================= */
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!schoolId) return;
+
+      try {
+        const data = await getClassesBySchool(schoolId);
+        setClasses(data.filter((c) => c.isActive));
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
+        setClasses([]);
+      }
+    };
+
+    fetchClasses();
+  }, [schoolId]);
 
   if (!student || !form) return null;
 
@@ -55,7 +76,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to update student");
     } finally {
       setLoading(false);
     }
@@ -79,7 +100,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
             />
           </div>
 
-          {/* Class */}
+          {/* Class (FROM SCHOOL CLASSES) */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Class</label>
             <Select
@@ -91,16 +112,21 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
+
               <SelectContent>
-                <SelectItem value="10-A">10-A</SelectItem>
-                <SelectItem value="10-B">10-B</SelectItem>
-                <SelectItem value="9-A">9-A</SelectItem>
-                <SelectItem value="9-B">9-B</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem
+                    key={cls.docId}
+                    value={`${cls.grade}-${cls.section}`}
+                  >
+                    Class {cls.grade}-{cls.section}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Roll Number */}
+          {/* Roll */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Roll Number</label>
             <Input
@@ -130,7 +156,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
             />
           </div>
 
-          {/* Email (READ-ONLY) */}
+          {/* Email (READ ONLY) */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Email</label>
             <Input value={student.email} disabled />
@@ -148,6 +174,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
           >
             Cancel
           </Button>
+
           <Button onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </Button>

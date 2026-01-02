@@ -6,6 +6,7 @@ import { db } from "@/config/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getSubjectsForStudent } from "@/services/studentClassSubjects.service";
 
 const StudentProfile = () => {
   const { studentId } = useParams();
@@ -13,6 +14,8 @@ const StudentProfile = () => {
 
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState([]);
+
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -35,6 +38,21 @@ const StudentProfile = () => {
 
     if (studentId) fetchStudent();
   }, [studentId]);
+
+  useEffect(() => {
+  if (!student) return;
+
+  const loadSubjects = async () => {
+    const data = await getSubjectsForStudent({
+      classLabel: student.classLabel,
+      schoolId: student.schoolId,
+    });
+    setSubjects(data);
+  };
+
+  loadSubjects();
+}, [student]);
+
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (!student) return <p className="p-6">Student not found</p>;
@@ -69,6 +87,31 @@ const StudentProfile = () => {
           <Info label="School ID" value={student.schoolId} />
         </CardContent>
       </Card>
+      <Card>
+  <CardContent className="p-6">
+    <h2 className="text-lg font-semibold mb-4">
+      Subjects
+    </h2>
+
+    {subjects.length === 0 ? (
+      <p className="text-gray-500">
+        No subjects assigned to this class yet.
+      </p>
+    ) : (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {subjects.map((s) => (
+          <div
+            key={s.id}
+            className="border rounded-md p-3 bg-gray-50"
+          >
+            <p className="font-medium">{s.name}</p>
+          </div>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
+
     </div>
   );
 };
