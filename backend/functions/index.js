@@ -19,7 +19,6 @@ export const createTeacher = onRequest(async (req, res) => {
       email,
       password,
       employeeId,
-      subject,
       phone,
       joiningDate,
       address,
@@ -54,7 +53,6 @@ export const createTeacher = onRequest(async (req, res) => {
       fullName,
       email,
       employeeId: employeeId || "",
-      subject: subject || "",
       phone: phone || "",
       joiningDate: joiningDate || "",
       address: address || "",
@@ -182,3 +180,108 @@ export const deleteStudent = onRequest(async (req, res) => {
     });
   }
 });
+
+export const createNotice = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  try {
+    const {
+      title,
+      message,
+      targetAudience, // students | teachers | all
+      attachments = [],
+      schoolId,       // 👈 ACCEPT FROM FRONTEND
+      createdBy,      // principalId from localStorage
+      createdByRole,  // "principal"
+    } = req.body;
+
+    // ✅ BASIC VALIDATION
+    if (!title || !message || !targetAudience || !schoolId) {
+      return res.status(400).json({
+        error: "Missing required fields",
+      });
+    }
+
+    if (!["students", "teachers", "all"].includes(targetAudience)) {
+      return res.status(400).json({
+        error: "Invalid target audience",
+      });
+    }
+
+    // ✅ SAVE NOTICE (NO CLAIM CHECK)
+    const ref = await admin.firestore().collection("notices").add({
+      title,
+      message,
+      targetAudience,
+      attachments,
+      schoolId,
+      createdBy: createdBy || null,
+      createdByRole: createdByRole || "principal",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return res.json({
+      success: true,
+      noticeId: ref.id,
+    });
+  } catch (err) {
+    console.error("Create notice error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
+export const deleteNotice = onRequest(async (req, res) => {
+  // ================= CORS =================
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  try {
+    const { noticeId, schoolId } = req.body;
+
+    // ✅ Validation
+    if (!noticeId || !schoolId) {
+      return res.status(400).json({
+        error: "noticeId and schoolId are required",
+      });
+    }
+
+    const noticeRef = admin.firestore().collection("notices").doc(noticeId);
+    const snap = await noticeRef.get();
+
+    if (!snap.exists) {
+      return res.status(404).json({ error: "Notice not found" });
+    }
+
+    // ✅ Extra safety: school match
+    if (snap.data().schoolId !== schoolId) {
+      return res.status(403).json({
+        error: "Permission denied (school mismatch)",
+      });
+    }
+
+    // ✅ Delete
+    await noticeRef.delete();
+
+    return res.json({
+      success: true,
+      message: "Notice deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete notice error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+

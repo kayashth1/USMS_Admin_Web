@@ -24,7 +24,6 @@ const EditTeacherDialog = ({ open, onOpenChange, teacher, onUpdated  }) => {
         fullName: teacher.fullName || "",
         email: teacher.email || "",
         phone: teacher.phone || "",
-        subject: teacher.subject || "",
         joiningDate: teacher.joiningDate || "",
         address: teacher.address || "",
         schoolName: teacher.schoolName || "",
@@ -97,15 +96,6 @@ const EditTeacherDialog = ({ open, onOpenChange, teacher, onUpdated  }) => {
             <Input
               name="phone"
               value={form.phone}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Subject</Label>
-            <Input
-              name="subject"
-              value={form.subject}
               onChange={handleChange}
             />
           </div>

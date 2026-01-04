@@ -34,6 +34,11 @@ const TeacherAssignment = () => {
   const [classSubjects, setClassSubjects] = useState([]);
   const [assignments, setAssignments] = useState([]);
 
+  const classMap = Object.fromEntries(
+  classes.map(c => [c.docId, c.id])
+);
+
+
   /* ================= LOAD BASE ================= */
   useEffect(() => {
     if (!schoolId) return;
@@ -103,9 +108,10 @@ const TeacherAssignment = () => {
             </SelectTrigger>
             <SelectContent>
               {classes.map((c) => (
-                <SelectItem key={c.docId} value={c.id}>
-                  {c.id}
-                </SelectItem>
+<SelectItem key={c.docId} value={c.docId}>
+  {c.id}
+</SelectItem>
+
               ))}
             </SelectContent>
           </Select>
@@ -141,7 +147,7 @@ const TeacherAssignment = () => {
 
             return (
               <div
-                key={a.id}
+                key={a.docid}
                 className="flex items-center justify-between border rounded-lg p-3"
               >
                 <div>
@@ -149,7 +155,7 @@ const TeacherAssignment = () => {
                     {teacher?.fullName} — {subject?.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Section {a.classId}
+  Section {classMap[a.classId] || "—"}
                   </p>
                 </div>
 

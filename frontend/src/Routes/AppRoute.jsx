@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AdminLayout from "@/components/Layout/AdminLayout";
 import ProtectedRoute from "@/Routes/ProtectedRoute";
 
-import Notices from "@/Pages/notices/Notices";
+import Notices from "@/Pages/notices/NoticeManagement";
 import Teachers from "@/Pages/teachers/Teachers";
 import TeacherProfile from "@/Pages/teachers/TeacherProfile";
 import Students from "@/Pages/students/Students";

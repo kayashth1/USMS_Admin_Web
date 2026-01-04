@@ -128,9 +128,6 @@ const visibleTeachers =
                     <h3 className="font-semibold">
                       {teacher.fullName}
                     </h3>
-                    <p className="text-sm text-gray-500">
-                      {teacher.subject || "-"}
-                    </p>
                   </div>
 
                   <Badge

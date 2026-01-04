@@ -25,7 +25,6 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
     email: "",
     password: "",
     phone: "",
-    subject: "",
     joiningDate: "",
     address: "",
   };
@@ -61,7 +60,6 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
         email: form.email.trim(),
         password: form.password,
         phone: form.phone.trim(),
-        subject: form.subject.trim(),
         joiningDate: form.joiningDate,
         address: form.address.trim(),
         schoolId, // 🔥 AUTO-ASSIGNED
@@ -131,15 +129,6 @@ const AddTeacherDialog = ({ open, onOpenChange }) => {
             <Input
               name="phone"
               value={form.phone}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Subject</Label>
-            <Input
-              name="subject"
-              value={form.subject}
               onChange={handleChange}
             />
           </div>
