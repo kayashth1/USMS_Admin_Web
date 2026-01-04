@@ -89,14 +89,18 @@ export const createStudent = onRequest(async (req, res) => {
       email,
       password,
       roll,
-      classLabel,
+      classId,        // ✅ CHANGED (SOURCE OF TRUTH)
+      classLabel,     // optional (UI only)
       parentName,
       contact,
       schoolId,
     } = req.body;
 
-    if (!fullName || !email || !password || !schoolId) {
-      return res.status(400).json({ error: "Missing required fields" });
+    // ✅ REQUIRED VALIDATION
+    if (!fullName || !email || !password || !schoolId || !classId) {
+      return res.status(400).json({
+        error: "Missing required fields",
+      });
     }
 
     // 1️⃣ Create Auth user
@@ -108,22 +112,23 @@ export const createStudent = onRequest(async (req, res) => {
 
     const uid = user.uid;
 
-    // 2️⃣ Claims
+    // 2️⃣ Set Custom Claims
     await admin.auth().setCustomUserClaims(uid, {
       role: "student",
       schoolId,
     });
 
-    // 3️⃣ Firestore
+    // 3️⃣ Save Student (Firestore)
     await admin.firestore().collection("students").doc(uid).set({
       id: uid,
       fullName,
       email,
       roll: roll || "",
-      classLabel: classLabel || "",
+      classId,                     // 🔥 REQUIRED FK
+      classLabel: classLabel || "", // optional (display only)
       parentName: parentName || "",
       contact: contact || "",
-      schoolId,              // 🔥 ONLY FK
+      schoolId,
       role: "student",
       isActive: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -131,9 +136,11 @@ export const createStudent = onRequest(async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
+    console.error("Create student failed:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 export const deleteStudent = onRequest(async (req, res) => {
   // ===== CORS =====

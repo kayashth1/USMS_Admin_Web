@@ -22,7 +22,7 @@ const ClassSubjectManagement = () => {
 
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState(""); // 🔥 WILL HOLD docId
   const [assigned, setAssigned] = useState([]);
 
   /* ================= LOAD BASE DATA ================= */
@@ -39,6 +39,7 @@ const ClassSubjectManagement = () => {
   useEffect(() => {
     if (!selectedClass || !schoolId) return;
 
+    // 🔥 selectedClass is classes.docId
     getClassSubjects(selectedClass, schoolId).then(setAssigned);
   }, [selectedClass, schoolId]);
 
@@ -51,13 +52,16 @@ const ClassSubjectManagement = () => {
       await removeSubjectFromClass(existing.id);
     } else {
       await addSubjectToClass({
-        classId: selectedClass,
+        classId: selectedClass, // ✅ docId
         subjectId,
         schoolId,
       });
     }
 
-    const updated = await getClassSubjects(selectedClass, schoolId);
+    const updated = await getClassSubjects(
+      selectedClass,
+      schoolId
+    );
     setAssigned(updated);
   };
 
@@ -76,14 +80,21 @@ const ClassSubjectManagement = () => {
         </div>
 
         {/* Class Select */}
-        <Select value={selectedClass} onValueChange={setSelectedClass}>
+        <Select
+          value={selectedClass}
+          onValueChange={setSelectedClass}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Select Section" />
           </SelectTrigger>
+
           <SelectContent>
             {classes.map((cls) => (
-              <SelectItem key={cls.docId} value={cls.id}>
-                {cls.id}
+              <SelectItem
+                key={cls.docId}
+                value={cls.docId}          // 🔥 FIXED
+              >
+                {cls.grade}-{cls.section}  {/* UI only */}
               </SelectItem>
             ))}
           </SelectContent>

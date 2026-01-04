@@ -6,7 +6,10 @@ import { useNavigate } from "react-router-dom";
 
 import AddStudentDialog from "@/components/students/AddStudentDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
-import { deleteStudent } from "@/services/student.service";
+import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
+
+import { deleteStudent, getStudentsBySchool } from "@/services/student.service";
+import { getClassesBySchool } from "@/services/class.service";
 
 import {
   Select,
@@ -16,13 +19,12 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { getStudentsBySchool } from "@/services/student.service";
-import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
-
 const Students = () => {
   const schoolId = localStorage.getItem("principalSchoolId");
+  const navigate = useNavigate();
 
   const [students, setStudents] = useState([]);
+  const [classesMap, setClassesMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -30,20 +32,32 @@ const Students = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-const [studentToDelete, setStudentToDelete] = useState(null);
-const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const navigate = useNavigate();
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   /* ================= FETCH ================= */
   const loadStudents = async () => {
     try {
       setLoading(true);
-      const data = await getStudentsBySchool(schoolId);
-      setStudents(Array.isArray(data) ? data : []);
+
+      const [studentData, classData] = await Promise.all([
+        getStudentsBySchool(schoolId),
+        getClassesBySchool(schoolId),
+      ]);
+
+      setStudents(Array.isArray(studentData) ? studentData : []);
+
+      // 🔥 classId → label map
+      const map = {};
+      (Array.isArray(classData) ? classData : []).forEach((c) => {
+        map[c.docId] = `${c.grade}-${c.section}`;
+      });
+      setClassesMap(map);
+
     } catch (err) {
       console.error("Failed to fetch students:", err);
       setStudents([]);
+      setClassesMap({});
     } finally {
       setLoading(false);
     }
@@ -81,7 +95,6 @@ const [deleteLoading, setDeleteLoading] = useState(false);
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {/* dynamic later */}
             </SelectContent>
           </Select>
         </CardContent>
@@ -114,8 +127,10 @@ const [deleteLoading, setDeleteLoading] = useState(false);
                     <p className="text-xs text-gray-500">{s.email}</p>
                   </td>
 
-                  {/* Class */}
-                  <td className="px-4 py-3">{s.classLabel || "-"}</td>
+                  {/* 🔥 Class (FIXED via classId) */}
+                  <td className="px-4 py-3">
+                    {classesMap[s.classId] || "-"}
+                  </td>
 
                   {/* Parent */}
                   <td className="px-4 py-3">{s.parentName || "-"}</td>
@@ -143,18 +158,18 @@ const [deleteLoading, setDeleteLoading] = useState(false);
                     >
                       ✏️
                     </Button>
-<Button
-  size="icon"
-  variant="ghost"
-  className="text-red-500"
-  onClick={() => {
-    setStudentToDelete(s);
-    setDeleteOpen(true);
-  }}
->
-  🗑️
-</Button>
 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-red-500"
+                      onClick={() => {
+                        setStudentToDelete(s);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      🗑️
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -180,25 +195,25 @@ const [deleteLoading, setDeleteLoading] = useState(false);
         student={selectedStudent}
         onSuccess={loadStudents}
       />
-      <DeleteStudentConfirmDialog
-  open={deleteOpen}
-  onOpenChange={setDeleteOpen}
-  student={studentToDelete}
-  loading={deleteLoading}
-  onConfirm={async () => {
-    try {
-      setDeleteLoading(true);
-      await deleteStudent(studentToDelete.id);
-      loadStudents();
-      setDeleteOpen(false);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setDeleteLoading(false);
-    }
-  }}
-/>
 
+      <DeleteStudentConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        student={studentToDelete}
+        loading={deleteLoading}
+        onConfirm={async () => {
+          try {
+            setDeleteLoading(true);
+            await deleteStudent(studentToDelete.id);
+            loadStudents();
+            setDeleteOpen(false);
+          } catch (err) {
+            alert(err.message);
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+      />
     </div>
   );
 };

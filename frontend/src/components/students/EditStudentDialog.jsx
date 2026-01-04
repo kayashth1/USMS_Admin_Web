@@ -26,40 +26,44 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
   const schoolId = localStorage.getItem("principalSchoolId");
 
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [form, setForm] = useState(null);
 
   /* ================= INIT FORM ================= */
   useEffect(() => {
-    if (student) {
-      setForm({
-        fullName: student.fullName || "",
-        roll: student.roll || "",
-        classLabel: student.classLabel || "",
-        parentName: student.parentName || "",
-        contact: student.contact || "",
-      });
-    }
+    if (!student) return;
+
+    setForm({
+      fullName: student.fullName || "",
+      roll: student.roll || "",
+      classId: student.classId || "", // 🔥 SOURCE OF TRUTH
+      parentName: student.parentName || "",
+      contact: student.contact || "",
+    });
   }, [student]);
 
-  /* ================= FETCH CLASSES ================= */
+  /* ================= LOAD CLASSES ================= */
   useEffect(() => {
-    const fetchClasses = async () => {
-      if (!schoolId) return;
+    if (!schoolId) return;
 
+    const loadClasses = async () => {
       try {
         const data = await getClassesBySchool(schoolId);
-        setClasses(data.filter((c) => c.isActive));
+        setClasses(
+          Array.isArray(data)
+            ? data.filter((c) => c.isActive !== false)
+            : []
+        );
       } catch (err) {
-        console.error("Failed to fetch classes:", err);
+        console.error("Failed to load classes:", err);
         setClasses([]);
       }
     };
 
-    fetchClasses();
+    loadClasses();
   }, [schoolId]);
 
-  if (!student || !form) return null;
+  if (!open || !student || !form) return null;
 
   /* ================= HANDLERS ================= */
   const handleChange = (e) => {
@@ -69,9 +73,19 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
 
   const handleSave = async () => {
     try {
+      if (!form.fullName || !form.roll || !form.classId) {
+        throw new Error("Please fill all required fields");
+      }
+
       setLoading(true);
 
-      await updateStudent(student.id, form);
+      await updateStudent(student.id, {
+        fullName: form.fullName,
+        roll: form.roll,
+        classId: form.classId,
+        parentName: form.parentName,
+        contact: form.contact,
+      });
 
       onOpenChange(false);
       onSuccess?.();
@@ -82,6 +96,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -100,26 +115,22 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
             />
           </div>
 
-          {/* Class (FROM SCHOOL CLASSES) */}
+          {/* Class */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Class</label>
             <Select
-              value={form.classLabel}
+              value={form.classId}
               onValueChange={(v) =>
-                setForm((p) => ({ ...p, classLabel: v }))
+                setForm((p) => ({ ...p, classId: v }))
               }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
-
               <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem
-                    key={cls.docId}
-                    value={`${cls.grade}-${cls.section}`}
-                  >
-                    Class {cls.grade}-{cls.section}
+                {classes.map((c) => (
+                  <SelectItem key={c.docId} value={c.docId}>
+                    {c.grade}-{c.section}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -136,7 +147,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
             />
           </div>
 
-          {/* Parent Name */}
+          {/* Parent */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Parent Name</label>
             <Input
@@ -156,7 +167,7 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
             />
           </div>
 
-          {/* Email (READ ONLY) */}
+          {/* Email (read-only) */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Email</label>
             <Input value={student.email} disabled />
@@ -174,7 +185,6 @@ const EditStudentDialog = ({ open, onOpenChange, student, onSuccess }) => {
           >
             Cancel
           </Button>
-
           <Button onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </Button>

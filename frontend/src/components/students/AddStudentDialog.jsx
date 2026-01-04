@@ -7,8 +7,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 import {
   Select,
   SelectTrigger,
@@ -31,14 +33,15 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
     email: "",
     password: "",
     roll: "",
-    classLabel: "",
+    classId: "",        // ✅ SOURCE OF TRUTH (DB)
+    classLabel: "",     // UI ONLY
     parentName: "",
     contact: "",
   });
 
-  /* ================= LOAD CLASSES ================= */
+  /* ================= FETCH CLASSES ================= */
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId || !open) return;
 
     const loadClasses = async () => {
       const data = await getClassesBySchool(schoolId);
@@ -46,12 +49,24 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
     };
 
     loadClasses();
-  }, [schoolId]);
+  }, [schoolId, open]);
 
-  /* ================= CHANGE ================= */
+  /* ================= INPUT CHANGE ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
+  };
+
+  /* ================= CLASS SELECT ================= */
+  const handleClassSelect = (docId) => {
+    const cls = classes.find((c) => c.docId === docId);
+    if (!cls) return;
+
+    setForm((p) => ({
+      ...p,
+      classId: cls.docId,
+      classLabel: `${cls.grade}-${cls.section}`, // UI display only
+    }));
   };
 
   /* ================= SUBMIT ================= */
@@ -66,7 +81,7 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
         !form.email ||
         !form.password ||
         !form.roll ||
-        !form.classLabel
+        !form.classId
       ) {
         throw new Error("Please fill all required fields");
       }
@@ -74,8 +89,15 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
       setLoading(true);
 
       await createStudent({
-        ...form,
-        schoolId, // ✅ ONLY FOREIGN KEY
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        roll: form.roll,
+        classId: form.classId,       // ✅ DB FIELD
+        classLabel: form.classLabel, // optional / UI
+        parentName: form.parentName,
+        contact: form.contact,
+        schoolId,
       });
 
       onOpenChange(false);
@@ -87,6 +109,7 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -124,24 +147,16 @@ const AddStudentDialog = ({ open, onOpenChange, onSuccess }) => {
             onChange={handleChange}
           />
 
-          {/* 🔥 DYNAMIC CLASSES */}
-          <Select
-            value={form.classLabel}
-            onValueChange={(v) =>
-              setForm((p) => ({ ...p, classLabel: v }))
-            }
-          >
+          {/* 🔥 CLASS DROPDOWN (BY SCHOOL) */}
+          <Select onValueChange={handleClassSelect}>
             <SelectTrigger>
               <SelectValue placeholder="Class & Section" />
             </SelectTrigger>
 
             <SelectContent>
-              {classes.map((c) => (
-                <SelectItem
-                  key={c.docId}
-                  value={`${c.grade}-${c.section}`}
-                >
-                  {c.grade}-{c.section}
+              {classes.map((cls) => (
+                <SelectItem key={cls.docId} value={cls.docId}>
+                  {cls.grade}-{cls.section}
                 </SelectItem>
               ))}
             </SelectContent>
