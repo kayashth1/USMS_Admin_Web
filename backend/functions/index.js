@@ -1,7 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
-import admin from "firebase-admin";
+import admin from "./admin.js";
 
-admin.initializeApp();
 
 export const createTeacher = onRequest(async (req, res) => {
   // ================= CORS =================
@@ -87,7 +86,7 @@ export const createStudent = onRequest(async (req, res) => {
       email,
       password,
       roll,
-      classId,        // ✅ CHANGED (SOURCE OF TRUTH)
+      classId,        // ✅ SOURCE OF TRUTH
       classLabel,     // optional (UI only)
       parentName,
       contact,
@@ -123,10 +122,14 @@ export const createStudent = onRequest(async (req, res) => {
       email,
       roll: roll || "",
       classId,                     // 🔥 REQUIRED FK
-      classLabel: classLabel || "", // optional (display only)
+      classLabel: classLabel || "", // UI only
       parentName: parentName || "",
       contact: contact || "",
       schoolId,
+
+      // ✅ NEW FIELD
+      currentMonthAttendancePercentage: null,
+
       role: "student",
       isActive: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
