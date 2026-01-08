@@ -17,6 +17,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs";
+import TeacherTimetableTab from "@/components/teachers/TeacherTimetableTab";
 
 const TeacherProfile = () => {
   const { teacherId } = useParams();
@@ -165,6 +166,7 @@ const TeacherProfile = () => {
           <TabsTrigger value="classes">Assigned Classes</TabsTrigger>
           <TabsTrigger value="notices">Notices</TabsTrigger>
           <TabsTrigger value="materials">Study Materials</TabsTrigger>
+          <TabsTrigger value="timetable">Timetable</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -219,6 +221,13 @@ const TeacherProfile = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="timetable">
+  <TeacherTimetableTab
+    teacherId={teacher.id}
+    schoolId={teacher.schoolId}
+  />
+</TabsContent>
+
       </Tabs>
     </div>
   );
