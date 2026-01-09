@@ -19,7 +19,7 @@ const menuItems = [
   { title: "Teacher Management", path: "/teachers", icon: Users },
   { title: "Student Management", path: "/students", icon: GraduationCap },
   { title: "Attendance", path: "/attendance", icon: ClipboardList },
-  { title: "Academic Management", path: "/academics", icon: BarChart3 },
+  // { title: "Academic Management", path: "/academics", icon: BarChart3 },
   { title: "Books & Content", path: "/books", icon: BookOpen },
   { title: "Settings", path: "/settings", icon: Settings },
 ];

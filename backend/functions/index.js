@@ -126,10 +126,8 @@ export const createStudent = onRequest(async (req, res) => {
       parentName: parentName || "",
       contact: contact || "",
       schoolId,
-
       // ✅ NEW FIELD
-      currentMonthAttendancePercentage: null,
-
+  currentMonthAttendancePercentage: 0.0,
       role: "student",
       isActive: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
