@@ -7,6 +7,17 @@ import {
   getDownloadURL,
 } from "firebase/storage"
 
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+
+import { db } from "@/config/firebase";
+
 
 /* ================= CREATE NOTICE ================= */
 export const createNotice = async ({
@@ -104,3 +115,23 @@ export const uploadNoticeAttachment = async (file) => {
     size: file.size,
   };
 };
+
+/* ================= GET NOTICES BY SCHOOL ================= */
+export const getRecentNoticesBySchool = async (schoolId, count = 4) => {
+  if (!schoolId) return [];
+
+  const q = query(
+    collection(db, "notices"),
+    where("schoolId", "==", schoolId),
+    orderBy("createdAt", "desc"),
+    limit(count)
+  );
+
+  const snap = await getDocs(q);
+
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+};
+

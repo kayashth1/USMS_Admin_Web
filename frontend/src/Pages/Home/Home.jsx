@@ -43,15 +43,12 @@ const Home = () => {
             >
               Login as Principal
             </Link>
-            <button className="px-6 py-3 border border-indigo-600 text-indigo-600 rounded-lg text-sm font-medium">
-              Request Demo
-            </button>
           </div>
         </div>
 
         {/* Placeholder visual */}
         <div className="bg-white rounded-2xl shadow-md h-72 flex items-center justify-center text-gray-400">
-          Admin Dashboard Preview
+          <img src="./hero.png" alt="" />
         </div>
       </section>
 
