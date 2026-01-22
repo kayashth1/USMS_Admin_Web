@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import {
   addSubject,
   getSubjectsBySchool,
-  toggleSubjectStatus,
+  deleteSubject,
 } from "@/services/subject.service";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 
 const SubjectManagement = () => {
   const schoolId = localStorage.getItem("principalSchoolId");
@@ -18,24 +17,41 @@ const SubjectManagement = () => {
   const [loading, setLoading] = useState(false);
 
   const loadSubjects = async () => {
-    const data = await getSubjectsBySchool(schoolId);
-    setSubjects(data);
+    setSubjects(await getSubjectsBySchool(schoolId));
   };
 
   useEffect(() => {
-    if (schoolId) loadSubjects();
+    if (!schoolId) return;
+    loadSubjects();
   }, [schoolId]);
 
   const handleAdd = async () => {
     try {
       setLoading(true);
-      await addSubject({ name: newSubject, schoolId });
+      await addSubject({
+        name: newSubject,
+        schoolId,
+      });
       setNewSubject("");
       await loadSubjects();
     } catch (err) {
       alert(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (subject) => {
+    const ok = confirm(
+      `Delete "${subject.name}" permanently?\nRemove it from all classes first.`
+    );
+    if (!ok) return;
+
+    try {
+      await deleteSubject({ subjectId: subject.id, schoolId });
+      await loadSubjects();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -47,18 +63,22 @@ const SubjectManagement = () => {
         <div>
           <h2 className="text-lg font-semibold">Subjects</h2>
           <p className="text-sm text-gray-500">
-            Manage subjects offered by your school
+            Create subjects once. Assign them to classes separately.
           </p>
         </div>
 
         {/* Add Subject */}
         <div className="flex gap-3">
           <Input
-            placeholder="Enter subject name (e.g. Mathematics)"
+            placeholder="Enter subject name (e.g. Physics)"
             value={newSubject}
             onChange={(e) => setNewSubject(e.target.value)}
           />
-          <Button onClick={handleAdd} disabled={loading || !newSubject}>
+
+          <Button
+            onClick={handleAdd}
+            disabled={loading || !newSubject}
+          >
             Add
           </Button>
         </div>
@@ -68,21 +88,16 @@ const SubjectManagement = () => {
           {subjects.map((subject) => (
             <div
               key={subject.id}
-              className="flex items-center justify-between border rounded-lg p-3"
+              className="flex justify-between items-center border rounded-lg p-3"
             >
-              <div>
-                <p className="font-medium">{subject.name}</p>
-                <p className="text-xs text-gray-500">
-                  {subject.isActive ? "Active" : "Inactive"}
-                </p>
-              </div>
+              <p className="font-medium">{subject.name}</p>
 
-              <Switch
-                checked={subject.isActive}
-                onCheckedChange={(val) =>
-                  toggleSubjectStatus(subject.id, val).then(loadSubjects)
-                }
-              />
+              <Button
+                variant="destructive"
+                onClick={() => handleDelete(subject)}
+              >
+                Delete
+              </Button>
             </div>
           ))}
         </div>

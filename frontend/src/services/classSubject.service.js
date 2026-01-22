@@ -7,7 +7,6 @@ import {
   where,
   serverTimestamp,
   doc,
-  getDoc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
@@ -17,7 +16,7 @@ export const getClassSubjects = async (classId, schoolId) => {
 
   const q = query(
     collection(db, "classSubjects"),
-    where("classId", "==", classId),   // ✅ MUST be classes.docId
+    where("classId", "==", classId),
     where("schoolId", "==", schoolId)
   );
 
@@ -31,9 +30,9 @@ export const getClassSubjects = async (classId, schoolId) => {
 
 /* ================= ADD SUBJECT TO CLASS ================= */
 /*
-  🔥 IMPORTANT:
-  - classId MUST be classes.docId
-  - NEVER pass "9C" or "10-A"
+  FINAL RULE:
+  - subjectId MUST come from subjects collection
+  - NO subject creation here
 */
 export const addSubjectToClass = async ({
   classId,
@@ -44,15 +43,31 @@ export const addSubjectToClass = async ({
     throw new Error("Missing required fields");
   }
 
+  /* Prevent duplicate mapping */
+  const q = query(
+    collection(db, "classSubjects"),
+    where("classId", "==", classId),
+    where("subjectId", "==", subjectId),
+    where("schoolId", "==", schoolId)
+  );
+
+  const snap = await getDocs(q);
+  if (!snap.empty) return;
+
   await addDoc(collection(db, "classSubjects"), {
-    classId,            // ✅ UID of class document
-    subjectId,          // UID of subject document
+    classId,
+    subjectId,
     schoolId,
     createdAt: serverTimestamp(),
   });
 };
 
 /* ================= REMOVE SUBJECT FROM CLASS ================= */
-export const removeSubjectFromClass = async (docId) => {
-  await deleteDoc(doc(db, "classSubjects", docId));
+/*
+  FINAL RULE:
+  - ONLY remove mapping
+  - SUBJECT LIFECYCLE IS MANAGED ELSEWHERE
+*/
+export const removeSubjectFromClass = async (classSubjectId) => {
+  await deleteDoc(doc(db, "classSubjects", classSubjectId));
 };

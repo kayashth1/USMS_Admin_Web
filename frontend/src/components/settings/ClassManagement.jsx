@@ -3,6 +3,7 @@ import {
   createClass,
   getClassesBySchool,
   toggleClassStatus,
+  deleteClass,
 } from "@/services/class.service";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,24 @@ const ClassManagement = () => {
       alert(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (cls) => {
+    const ok = confirm(
+      `Delete class ${cls.id} permanently?\nThis cannot be undone.`
+    );
+    if (!ok) return;
+
+    try {
+      await deleteClass({
+        classDocId: cls.docId,
+        classId: cls.id,
+        schoolId,
+      });
+      await loadClasses();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -100,12 +119,21 @@ const ClassManagement = () => {
                 </p>
               </div>
 
-              <Switch
-                checked={cls.isActive}
-                onCheckedChange={(val) =>
-                  toggleClassStatus(cls.docId, val).then(loadClasses)
-                }
-              />
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={cls.isActive}
+                  onCheckedChange={(val) =>
+                    toggleClassStatus(cls.docId, val).then(loadClasses)
+                  }
+                />
+
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(cls)}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
           ))}
         </div>

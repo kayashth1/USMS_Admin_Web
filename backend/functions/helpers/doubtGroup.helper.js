@@ -14,6 +14,20 @@ export const createOrUpdateDoubtGroup = async ({
   const groupId = `${classId}_${subjectId}`;
   const groupRef = db.collection("doubt_groups").doc(groupId);
 
+  /* ================================
+     ✅ FETCH CLASS & SUBJECT NAMES
+  ================================= */
+  const [classSnap, subjectSnap] = await Promise.all([
+    db.collection("classes").doc(classId).get(),
+    db.collection("subjects").doc(subjectId).get(),
+  ]);
+
+  const className = classSnap.exists ? classSnap.data().id : classId;
+  const subjectName = subjectSnap.exists ? subjectSnap.data().name : subjectId;
+
+  // ✅ FINAL GROUP NAME (Hindi-9A style)
+  const groupName = `${subjectName}-${className}`;
+
   const membersMap = {};
 
   // Teacher
@@ -31,6 +45,7 @@ export const createOrUpdateDoubtGroup = async ({
     groupRef,
     {
       groupId,
+      groupName, // ✅ added
       classId,
       subjectId,
       teacherId: teacher.uid,

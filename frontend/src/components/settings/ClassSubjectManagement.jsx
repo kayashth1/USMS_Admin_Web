@@ -8,7 +8,7 @@ import {
 import { getClassesBySchool } from "@/services/class.service";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectTrigger,
@@ -22,47 +22,41 @@ const ClassSubjectManagement = () => {
 
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(""); // 🔥 WILL HOLD docId
   const [assigned, setAssigned] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
 
   /* ================= LOAD BASE DATA ================= */
   useEffect(() => {
     if (!schoolId) return;
 
     getClassesBySchool(schoolId).then(setClasses);
-    getSubjectsBySchool(schoolId).then((data) =>
-      setSubjects(data.filter((s) => s.isActive))
-    );
+    getSubjectsBySchool(schoolId).then(setSubjects);
   }, [schoolId]);
 
   /* ================= LOAD CLASS SUBJECTS ================= */
   useEffect(() => {
-    if (!selectedClass || !schoolId) return;
+    if (!selectedClass) return;
 
-    // 🔥 selectedClass is classes.docId
     getClassSubjects(selectedClass, schoolId).then(setAssigned);
   }, [selectedClass, schoolId]);
 
-  const toggleSubject = async (subjectId) => {
-    const existing = assigned.find(
-      (a) => a.subjectId === subjectId
-    );
+  /* ================= ADD SUBJECT TO CLASS ================= */
+  const handleAdd = async () => {
+    await addSubjectToClass({
+      classId: selectedClass,
+      subjectId: selectedSubject,
+      schoolId,
+    });
 
-    if (existing) {
-      await removeSubjectFromClass(existing.id);
-    } else {
-      await addSubjectToClass({
-        classId: selectedClass, // ✅ docId
-        subjectId,
-        schoolId,
-      });
-    }
+    setSelectedSubject("");
+    setAssigned(await getClassSubjects(selectedClass, schoolId));
+  };
 
-    const updated = await getClassSubjects(
-      selectedClass,
-      schoolId
-    );
-    setAssigned(updated);
+  /* ================= REMOVE SUBJECT FROM CLASS ================= */
+  const handleRemove = async (cs) => {
+    await removeSubjectFromClass(cs.id);
+    setAssigned(await getClassSubjects(selectedClass, schoolId));
   };
 
   return (
@@ -72,55 +66,78 @@ const ClassSubjectManagement = () => {
         {/* Header */}
         <div>
           <h2 className="text-lg font-semibold">
-            Assign Subjects to Section
+            Assign Subjects to Class
           </h2>
           <p className="text-sm text-gray-500">
-            Subjects selected here apply only to the chosen section
+            Select subjects already created and assign them to a class
           </p>
         </div>
 
         {/* Class Select */}
-        <Select
-          value={selectedClass}
-          onValueChange={setSelectedClass}
-        >
+        <Select value={selectedClass} onValueChange={setSelectedClass}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select Section" />
+            <SelectValue placeholder="Select Class" />
           </SelectTrigger>
-
           <SelectContent>
             {classes.map((cls) => (
-              <SelectItem
-                key={cls.docId}
-                value={cls.docId}          // 🔥 FIXED
-              >
-                {cls.grade}-{cls.section}  {/* UI only */}
+              <SelectItem key={cls.docId} value={cls.docId}>
+                {cls.grade}-{cls.section}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Subject Checkboxes */}
+        {/* Subject Select */}
         {selectedClass && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {subjects.map((subject) => (
-              <label
-                key={subject.id}
-                className="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"
-              >
-                <Checkbox
-                  checked={assigned.some(
-                    (a) => a.subjectId === subject.id
-                  )}
-                  onCheckedChange={() =>
-                    toggleSubject(subject.id)
-                  }
-                />
-                <span>{subject.name}</span>
-              </label>
-            ))}
+          <div className="flex gap-3">
+            <Select
+              value={selectedSubject}
+              onValueChange={setSelectedSubject}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select Subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((sub) => (
+                  <SelectItem key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              onClick={handleAdd}
+              disabled={!selectedSubject}
+            >
+              Add
+            </Button>
           </div>
         )}
+
+        {/* Assigned Subjects */}
+        <div className="space-y-2">
+          {assigned.map((cs) => {
+            const subject = subjects.find(
+              (s) => s.id === cs.subjectId
+            );
+
+            return (
+              <div
+                key={cs.id}
+                className="flex justify-between items-center border rounded-lg p-3"
+              >
+                <span>{subject?.name}</span>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleRemove(cs)}
+                >
+                  Remove
+                </Button>
+              </div>
+            );
+          })}
+        </div>
 
       </CardContent>
     </Card>

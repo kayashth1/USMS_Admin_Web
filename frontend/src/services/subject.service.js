@@ -7,19 +7,34 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
-/* ================= ADD SUBJECT ================= */
+/* ================= ADD SUBJECT (GLOBAL ONLY) ================= */
 export const addSubject = async ({ name, schoolId }) => {
   if (!name || !schoolId) {
-    throw new Error("Missing subject name or school");
+    throw new Error("Missing subject or school");
+  }
+
+  const trimmed = name.trim();
+
+  // 🔒 Prevent duplicates (case-insensitive handled at UI level)
+  const q = query(
+    collection(db, "subjects"),
+    where("schoolId", "==", schoolId),
+    where("name", "==", trimmed)
+  );
+
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    throw new Error("Subject already exists");
   }
 
   await addDoc(collection(db, "subjects"), {
-    name: name.trim(),
+    name: trimmed,
     schoolId,
-    isActive: true,
+    isActive: true, // kept to avoid schema issues
     createdAt: serverTimestamp(),
   });
 };
@@ -41,9 +56,24 @@ export const getSubjectsBySchool = async (schoolId) => {
 
 /* ================= TOGGLE SUBJECT ================= */
 export const toggleSubjectStatus = async (subjectId, isActive) => {
-  const ref = doc(db, "subjects", subjectId);
+  await updateDoc(doc(db, "subjects", subjectId), { isActive });
+};
 
-  await updateDoc(ref, {
-    isActive,
-  });
+/* ================= DELETE SUBJECT (SAFE) ================= */
+export const deleteSubject = async ({ subjectId, schoolId }) => {
+  // ❗ Block delete if subject is still assigned
+  const q = query(
+    collection(db, "classSubjects"),
+    where("subjectId", "==", subjectId),
+    where("schoolId", "==", schoolId)
+  );
+
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    throw new Error(
+      "Subject is assigned to one or more classes. Remove it from classes first."
+    );
+  }
+
+  await deleteDoc(doc(db, "subjects", subjectId));
 };

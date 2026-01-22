@@ -288,4 +288,5 @@ export const deleteNotice = onRequest(async (req, res) => {
 
 export { onTeacherAssigned } from "./triggers/onTeacherAssigned.js";
 export { onStudentClassAssigned } from "./triggers/onStudentClassAssigned.js";
+export { onTeacherUnassigned } from "./triggers/onTeacherUnassigned.js";
 
