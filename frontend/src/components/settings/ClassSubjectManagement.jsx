@@ -54,10 +54,17 @@ const ClassSubjectManagement = () => {
   };
 
   /* ================= REMOVE SUBJECT FROM CLASS ================= */
-  const handleRemove = async (cs) => {
-    await removeSubjectFromClass(cs.id);
-    setAssigned(await getClassSubjects(selectedClass, schoolId));
-  };
+const handleRemove = async (cs) => {
+  await removeSubjectFromClass({
+    classSubjectId: cs.id,
+    classId: selectedClass,
+    subjectId: cs.subjectId,
+    schoolId,
+  });
+
+  setAssigned(await getClassSubjects(selectedClass, schoolId));
+};
+
 
   return (
     <Card>

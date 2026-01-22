@@ -28,7 +28,6 @@ export const getTeacherAssignments = async (schoolId) => {
 };
 
 /* ================= GET ASSIGNMENTS FOR ONE TEACHER (PROFILE VIEW) ================= */
-
 export const getAssignmentsForTeacher = async ({
   teacherId,
   schoolId,
@@ -69,8 +68,31 @@ export const assignTeacher = async ({
   });
 };
 
-/* ================= REMOVE ASSIGNMENT ================= */
+/* ================= REMOVE ASSIGNMENT (MANUAL) ================= */
 export const removeTeacherAssignment = async (docId) => {
   if (!docId) return;
   await deleteDoc(doc(db, "teacherClassSubjects", docId));
+};
+
+/* ================= REMOVE ASSIGNMENTS FOR CLASS + SUBJECT (AUTO CASCADE) ================= */
+export const removeTeacherAssignmentsForClassSubject = async ({
+  classId,
+  subjectId,
+  schoolId,
+}) => {
+  if (!classId || !subjectId || !schoolId) return;
+
+  const q = query(
+    collection(db, "teacherClassSubjects"),
+    where("classId", "==", classId),
+    where("subjectId", "==", subjectId),
+    where("schoolId", "==", schoolId)
+  );
+
+  const snap = await getDocs(q);
+
+  for (const d of snap.docs) {
+    await deleteDoc(doc(db, "teacherClassSubjects", d.id));
+    // 🔥 Triggers onTeacherUnassigned → doubt group deletion
+  }
 };
